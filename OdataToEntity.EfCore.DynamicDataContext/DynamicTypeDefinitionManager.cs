@@ -67,7 +67,7 @@ namespace OdataToEntity.EfCore.DynamicDataContext
                 return dynamicTypeDefinition;
 
             _dynamicTypeIndex++;
-            Type? dynamicTypeType = Type.GetType("OdataToEntity.EfCore.DynamicDataContext.Types.DynamicType" + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture));
+            Type? dynamicTypeType =  Type.GetType("OdataToEntity.EfCore.DynamicDataContext.Types.DynamicType" + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture));
             if (dynamicTypeType == null)
                 throw new InvalidProgramException("Cannot create DynamicType index " + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture) + " out of range");
 
