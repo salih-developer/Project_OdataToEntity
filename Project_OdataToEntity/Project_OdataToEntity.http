@@ -1,0 +1,6 @@
+@Project_OdataToEntity_HostAddress = http://localhost:5207
+
+GET {{Project_OdataToEntity_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
