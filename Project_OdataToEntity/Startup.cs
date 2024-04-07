@@ -57,15 +57,15 @@ namespace Project_OdataToEntity
             if (!String.IsNullOrEmpty(basePath) && basePath[0] != '/')
                 basePath = "/" + basePath;
 
-            InformationSchemaSettings informationSchemaSettings = null;//new InformationSchemaSettings();
-            //if (!String.IsNullOrEmpty(defaultSchema))
-            //    informationSchemaSettings.DefaultSchema = defaultSchema;
-            //if (includedSchemas != null)
-            //    informationSchemaSettings.IncludedSchemas = new HashSet<String>(includedSchemas);
-            //if (excludedSchemas != null)
-            //    informationSchemaSettings.ExcludedSchemas = new HashSet<String>(excludedSchemas);
-            //if (filter != null)
-            //    informationSchemaSettings.ObjectFilter = Enum.Parse<DbObjectFilter>(filter, true);
+            InformationSchemaSettings informationSchemaSettings =new InformationSchemaSettings();
+            if (!String.IsNullOrEmpty(defaultSchema))
+                informationSchemaSettings.DefaultSchema = defaultSchema;
+            if (includedSchemas != null)
+                informationSchemaSettings.IncludedSchemas = new HashSet<String>(includedSchemas);
+            if (excludedSchemas != null)
+                informationSchemaSettings.ExcludedSchemas = new HashSet<String>(excludedSchemas);
+            if (filter != null)
+                informationSchemaSettings.ObjectFilter = Enum.Parse<DbObjectFilter>(filter, true);
             //if (informationSchemaMappingFileName != null)
             //{
             //    String json = File.ReadAllText(informationSchemaMappingFileName);

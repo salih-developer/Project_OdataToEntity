@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -41,7 +42,7 @@ namespace OdataToEntity.EfCore.DynamicDataContext.ModelBuilder
                 String tableEdmName = MetadataProvider.GetTableEdmName(tableFullName);
                 var dynamicTypeDefinition = TypeDefinitionManager.GetOrAddDynamicTypeDefinition(tableFullName, isQueryType, tableEdmName);
                 EntityTypeBuilder entityTypeBuilder = modelBuilder.Entity(dynamicTypeDefinition.DynamicTypeType).ToTable(tableFullName.Name, tableFullName.Schema);
-
+                
                 entityType = (EntityType)entityTypeBuilder.Metadata;
                 entityType.IsKeyless = isQueryType;
                 foreach (DynamicPropertyInfo property in MetadataProvider.GetStructuralProperties(tableFullName))
@@ -55,7 +56,7 @@ namespace OdataToEntity.EfCore.DynamicDataContext.ModelBuilder
                         efProperty.SetValueGenerated(ValueGenerated.OnAdd, ConfigurationSource.Explicit);
                     }
                     else if (property.DatabaseGeneratedOption == DatabaseGeneratedOption.Computed)
-                        efProperty.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore,ConfigurationSource.Explicit);
+                        efProperty.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore, ConfigurationSource.Explicit);
                     else
                         efProperty.SetValueGenerated(ValueGenerated.Never, ConfigurationSource.Explicit);
                 }

@@ -1,11 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CSharp;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.OData.Edm;
 using OdataToEntity.EfCore.DynamicDataContext.InformationSchema;
 using OdataToEntity.EfCore.DynamicDataContext.ModelBuilder;
+using OdataToEntity.Parsers;
 using System;
+using System.CodeDom;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace OdataToEntity.EfCore.DynamicDataContext
 {
@@ -65,14 +72,17 @@ namespace OdataToEntity.EfCore.DynamicDataContext
             DynamicTypeDefinition? dynamicTypeDefinition = TryGetDynamicTypeDefinition(tableFullName);
             if (dynamicTypeDefinition != null)
                 return dynamicTypeDefinition;
-
+             
             _dynamicTypeIndex++;
-            Type? dynamicTypeType =  Type.GetType("OdataToEntity.EfCore.DynamicDataContext.Types.DynamicType" + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture));
+            Type? dynamicTypeType = createType(tableFullName);
+            //Type ? dynamicTypeType =  Type.GetType("OdataToEntity.EfCore.DynamicDataContext.Types.DynamicType" + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture));
             if (dynamicTypeType == null)
                 throw new InvalidProgramException("Cannot create DynamicType index " + _dynamicTypeIndex.ToString(CultureInfo.InvariantCulture) + " out of range");
 
             return CreateDynamicTypeDefinition(tableFullName, isQueryType, tableEdmName, dynamicTypeType);
         }
+
+        
         protected static void InitializeDbContext(DynamicMetadataProvider metadataProvider, Type dynamicDbContextType, DynamicTypeDefinitionManager typeDefinitionManager)
         {
             ConstructorInfo ctor = dynamicDbContextType.GetConstructor(new Type[] { typeof(DbContextOptions), typeof(DynamicModelBuilder).MakeByRefType() })!;
@@ -84,6 +94,20 @@ namespace OdataToEntity.EfCore.DynamicDataContext
         {
             _tableFullName2DynamicTypeDefinitions.TryGetValue(tableFullName, out DynamicTypeDefinition? dynamicTypeDefinition);
             return dynamicTypeDefinition;
+        }
+        private Type createType(in TableFullName tableFullName)
+        {
+           
+            var assemblyBuilder=AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(typeof(OeDynamicType).Name), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(typeof(OeDynamicType).Module.Name);
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(
+                  "OdataToEntity.EfCore.DynamicDataContext.Types."+ tableFullName .Schema+ "."+tableFullName.Name, TypeAttributes.Public, typeof(OeDynamicType));
+
+            typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+
+            Type newType = typeBuilder.CreateType();
+            
+            return newType;
         }
 
         public Type DynamicDbContextType { get; }

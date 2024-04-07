@@ -25,11 +25,18 @@ namespace OdataToEntity.AspNetCore
 
         private static async Task WriteMetadataAsync(IEdmModel edmModel, Stream stream)
         {
+            string ss = "dbo.Form_Form";
+            var tt=edmModel.FindDeclaredEntitySet(ss);
+
+
             var writerSettings = new ODataMessageWriterSettings();
             writerSettings.EnableMessageStreamDisposal = false;
             IODataResponseMessage message = new Infrastructure.OeInMemoryMessage(stream, null);
             using (var writer = new ODataMessageWriter((IODataResponseMessageAsync)message, writerSettings, edmModel))
+            {
                 await writer.WriteMetadataDocumentAsync().ConfigureAwait(false);
+            }
+                
         }
         private static void GetJsonSchema(IEdmModel edmModel, Stream stream)
         {
