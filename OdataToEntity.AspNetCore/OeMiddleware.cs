@@ -2,11 +2,21 @@
 using Microsoft.Extensions.Primitives;
 using Microsoft.OData;
 using Microsoft.OData.Edm;
+using Microsoft.OData.Edm.Csdl;
+using Microsoft.OData.Edm.Validation;
 using Microsoft.OData.UriParser;
 using OdataToEntity.Parsers;
 using System;
 using System.IO;
+using System.Net.Http.Headers;
+using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
+using System.Xml;
+using Microsoft.CodeAnalysis;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Text;
 
 namespace OdataToEntity.AspNetCore
 {
@@ -22,21 +32,28 @@ namespace OdataToEntity.AspNetCore
 
             EdmModel = edmModel;
         }
-
         private static async Task WriteMetadataAsync(IEdmModel edmModel, Stream stream)
         {
-            string ss = "dbo.Form_Form";
-            var tt=edmModel.FindDeclaredEntitySet(ss);
-
-
             var writerSettings = new ODataMessageWriterSettings();
             writerSettings.EnableMessageStreamDisposal = false;
             IODataResponseMessage message = new Infrastructure.OeInMemoryMessage(stream, null);
             using (var writer = new ODataMessageWriter((IODataResponseMessageAsync)message, writerSettings, edmModel))
-            {
                 await writer.WriteMetadataDocumentAsync().ConfigureAwait(false);
-            }
-                
+        }
+        private static async Task WriteMetadataAsync(IEdmModel edmModel, Stream stream,string modelName)
+        {
+            EdmEntitySet edmEntitySet = (EdmEntitySet)edmModel.FindDeclaredEntitySet(modelName);
+            var scm=edmModel.SchemaElements.ToList().First(x => x.Name == edmEntitySet.Name.Replace("dbo.",""));
+
+            var mymodel = new EdmModel();
+            mymodel.AddReferencedModel(edmModel.ReferencedModels.First());
+            ((List<IEdmSchemaElement>)mymodel.SchemaElements).Add(scm);
+
+            var writerSettings = new ODataMessageWriterSettings();
+            writerSettings.EnableMessageStreamDisposal = false;
+            IODataResponseMessage message = new Infrastructure.OeInMemoryMessage(stream, null);
+            using (var writer = new ODataMessageWriter((IODataResponseMessageAsync)message, writerSettings, mymodel))
+                await writer.WriteMetadataDocumentAsync().ConfigureAwait(false);
         }
         private static void GetJsonSchema(IEdmModel edmModel, Stream stream)
         {
@@ -132,8 +149,17 @@ namespace OdataToEntity.AspNetCore
         }
         private Task InvokeMetadataAsync(HttpContext httpContext)
         {
-            httpContext.Response.ContentType = "application/xml";
-            return WriteMetadataAsync(EdmModel, httpContext.Response.Body);
+            httpContext.Request.Query.TryGetValue("modelname", out StringValues modelName);
+            if(modelName.Count == 0)
+            {
+                httpContext.Response.ContentType = "application/xml";
+                return WriteMetadataAsync(EdmModel, httpContext.Response.Body);
+            }
+            else
+            {
+                httpContext.Response.ContentType = "application/xml";
+                return WriteMetadataAsync(EdmModel, httpContext.Response.Body, modelName[0]);
+            }
         }
         private Task InvokeServiceDocumentAsync(HttpContext httpContext)
         {
