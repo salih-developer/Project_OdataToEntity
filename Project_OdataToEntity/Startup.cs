@@ -22,17 +22,18 @@ namespace Project_OdataToEntity
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             // If using Kestrel:
             services.Configure<KestrelServerOptions>(options =>
             {
-                
+
                 options.AllowSynchronousIO = true;
             });
 
             // If using IIS:
             services.Configure<IISServerOptions>(options =>
             {
-                
+
                 options.AllowSynchronousIO = true;
             });
             services.AddLogging(loggingBuilder =>
@@ -46,7 +47,10 @@ namespace Project_OdataToEntity
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
-           
+            app.UseCors(
+               options => options.SetIsOriginAllowed(x => _ = true).AllowAnyMethod().AllowAnyHeader().AllowCredentials()
+              );
+
             String basePath = Configuration.GetValue<String>("OdataToEntity:BasePath");
             String provider = Configuration.GetValue<String>("OdataToEntity:Provider");
             String connectionString = Configuration.GetValue<String>("OdataToEntity:ConnectionString");
@@ -81,11 +85,11 @@ namespace Project_OdataToEntity
             using (ProviderSpecificSchema providerSchema = schemaFactory.CreateSchema(useRelationalNulls))
             {
                 IEdmModel edmModel = DynamicMiddlewareHelper.CreateEdmModel(providerSchema, informationSchemaSettings);
-                
+
                 app.UseOdataToEntityMiddleware<OePageMiddleware>(basePath, edmModel);
-                
+
             }
-            
+
         }
     }
 }

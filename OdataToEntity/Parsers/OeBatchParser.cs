@@ -36,6 +36,9 @@ namespace OdataToEntity.Parsers
                 case ODataConstants.MethodPost:
                     entitySetAdapter.AddEntity(dataContext, operation.Entry);
                     break;
+                case ODataConstants.MethodPut:
+                    entitySetAdapter.AttachEntity(dataContext, operation.Entry);
+                    break;
                 default:
                     throw new NotImplementedException(operation.Method);
             }

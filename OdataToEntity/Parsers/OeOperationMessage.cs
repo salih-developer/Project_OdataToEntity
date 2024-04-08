@@ -117,6 +117,7 @@ namespace OdataToEntity.Parsers
                     ODataConstants.MethodDelete => HttpStatusCode.OK,
                     ODataConstants.MethodPatch => HttpStatusCode.NoContent,
                     ODataConstants.MethodPost => HttpStatusCode.Created,
+                    ODataConstants.MethodPut => HttpStatusCode.NoContent,
                     _ => throw new NotSupportedException(Method),
                 };
             }

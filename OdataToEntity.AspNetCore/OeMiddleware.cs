@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace OdataToEntity.AspNetCore
 {
@@ -40,10 +41,10 @@ namespace OdataToEntity.AspNetCore
             using (var writer = new ODataMessageWriter((IODataResponseMessageAsync)message, writerSettings, edmModel))
                 await writer.WriteMetadataDocumentAsync().ConfigureAwait(false);
         }
-        private static async Task WriteMetadataAsync(IEdmModel edmModel, Stream stream,string modelName)
+        private static async Task WriteMetadataAsync(IEdmModel edmModel, Stream stream, string modelName)
         {
             EdmEntitySet edmEntitySet = (EdmEntitySet)edmModel.FindDeclaredEntitySet(modelName);
-            var scm=edmModel.SchemaElements.ToList().First(x => x.Name == edmEntitySet.Name.Replace("dbo.",""));
+            var scm = edmModel.SchemaElements.ToList().First(x => x.Name == edmEntitySet.Name.Replace("dbo.", ""));
 
             var mymodel = new EdmModel();
             mymodel.AddReferencedModel(edmModel.ReferencedModels.First());
@@ -55,14 +56,31 @@ namespace OdataToEntity.AspNetCore
             using (var writer = new ODataMessageWriter((IODataResponseMessageAsync)message, writerSettings, mymodel))
                 await writer.WriteMetadataDocumentAsync().ConfigureAwait(false);
         }
-        private static void GetJsonSchema(IEdmModel edmModel, Stream stream)
+        private static async Task GetJsonSchema(IEdmModel edmModel, Stream stream)
         {
-            using (var memoryStream = new MemoryStream()) //kestrel allow only async operation
+            using (var memoryStream = new MemoryStream())
             {
                 var schemaGenerator = new ModelBuilder.OeJsonSchemaGenerator(edmModel);
                 schemaGenerator.Generate(memoryStream);
                 memoryStream.Position = 0;
-                memoryStream.CopyToAsync(stream);
+               await  memoryStream.CopyToAsync(stream);
+            }
+        }
+        private static async Task GetJsonSchema(IEdmModel edmModel, Stream stream, string modelName)
+        {
+            EdmEntitySet edmEntitySet = (EdmEntitySet)edmModel.FindDeclaredEntitySet(modelName);
+            var scm = edmModel.SchemaElements.ToList().First(x => x.Name == edmEntitySet.Name.Replace("dbo.", ""));
+
+            var mymodel = new EdmModel();
+            mymodel.AddReferencedModel(edmModel.ReferencedModels.First());
+            ((List<IEdmSchemaElement>)mymodel.SchemaElements).Add(scm);
+
+            using (var memoryStream = new MemoryStream())
+            {
+                var schemaGenerator = new ModelBuilder.OeJsonSchemaGenerator(mymodel);
+                schemaGenerator.Generate(memoryStream);
+                memoryStream.Position = 0;
+              await  memoryStream.CopyToAsync(stream);
             }
         }
         protected virtual Query.OeModelBoundProvider? GetModelBoundProvider(HttpContext httpContext)
@@ -92,7 +110,7 @@ namespace OdataToEntity.AspNetCore
                 else if (httpContext.Request.Path == "/$batch")
                     await InvokeBatchAsync(httpContext).ConfigureAwait(false);
                 else if (httpContext.Request.Path == "/$json-schema")
-                    InvokeJsonSchema(httpContext);
+                    await InvokeJsonSchema(httpContext);
                 else if (httpContext.Request.Path == "" || httpContext.Request.Path == "/")
                     await InvokeServiceDocumentAsync(httpContext).ConfigureAwait(false);
                 else
@@ -142,24 +160,23 @@ namespace OdataToEntity.AspNetCore
             await parser.ExecuteBatchAsync(httpContext.Request.Body, httpContext.Response.Body,
                 httpContext.Request.ContentType, httpContext.RequestAborted).ConfigureAwait(false);
         }
-        private void InvokeJsonSchema(HttpContext httpContext)
+        private async Task InvokeJsonSchema(HttpContext httpContext)
         {
             httpContext.Response.ContentType = "application/schema+json";
-            GetJsonSchema(EdmModel, httpContext.Response.Body);
-        }
-        private Task InvokeMetadataAsync(HttpContext httpContext)
-        {
             httpContext.Request.Query.TryGetValue("modelname", out StringValues modelName);
-            if(modelName.Count == 0)
-            {
-                httpContext.Response.ContentType = "application/xml";
-                return WriteMetadataAsync(EdmModel, httpContext.Response.Body);
-            }
+            if (modelName.Count == 0)
+                await GetJsonSchema(EdmModel, httpContext.Response.Body);
             else
-            {
-                httpContext.Response.ContentType = "application/xml";
-                return WriteMetadataAsync(EdmModel, httpContext.Response.Body, modelName[0]);
-            }
+                await GetJsonSchema(EdmModel, httpContext.Response.Body, modelName[0]);
+        }
+        private async Task InvokeMetadataAsync(HttpContext httpContext)
+        {
+            httpContext.Response.ContentType = "application/xml";
+            httpContext.Request.Query.TryGetValue("modelname", out StringValues modelName);
+            if (modelName.Count == 0)
+                await WriteMetadataAsync(EdmModel, httpContext.Response.Body);
+            else
+                await WriteMetadataAsync(EdmModel, httpContext.Response.Body, modelName[0]);
         }
         private Task InvokeServiceDocumentAsync(HttpContext httpContext)
         {
