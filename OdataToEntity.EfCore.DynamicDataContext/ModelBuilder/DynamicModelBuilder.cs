@@ -34,8 +34,10 @@ namespace OdataToEntity.EfCore.DynamicDataContext.ModelBuilder
         }
         private EntityType CreateEntityType(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, in TableFullName tableFullName)
         {
+            
             if (!_entityTypes.TryGetValue(tableFullName, out EntityType? entityType))
             {
+                Console.WriteLine("CreateEntityType: " + tableFullName);
                 (String[] propertyNames, bool isPrimary)[] keys = MetadataProvider.GetKeys(tableFullName);
                 bool isQueryType = keys.Length == 0 ? true : MetadataProvider.IsQueryType(tableFullName);
 
@@ -83,8 +85,10 @@ namespace OdataToEntity.EfCore.DynamicDataContext.ModelBuilder
         }
         private void CreateNavigationProperties(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, in TableFullName tableFullName)
         {
+           
             foreach (String propertyName in MetadataProvider.GetNavigationProperties(tableFullName))
             {
+                Console.WriteLine("CreateNavigationProperties " + tableFullName + " propertyName:"+propertyName);
                 DynamicDependentPropertyInfo dependentInfo = MetadataProvider.GetDependentProperties(tableFullName, propertyName);
 
                 EntityType dependentEntityType = CreateEntityType(modelBuilder, dependentInfo.DependentTableName);

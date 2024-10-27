@@ -3,7 +3,8 @@ using Microsoft.OData.Edm;
 using OdataToEntity.AspNetCore;
 using OdataToEntity.EfCore.DynamicDataContext;
 using OdataToEntity.EfCore.DynamicDataContext.InformationSchema;
-
+using Serilog;
+using Serilog.AspNetCore;
 namespace Project_OdataToEntity
 {
     public class Startup
@@ -22,6 +23,8 @@ namespace Project_OdataToEntity
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            
+
             services.AddCors();
             // If using Kestrel:
             services.Configure<KestrelServerOptions>(options =>
@@ -42,11 +45,20 @@ namespace Project_OdataToEntity
                 loggingBuilder.AddDebug();
                 loggingBuilder.AddConfiguration(Configuration.GetSection("Logging"));
             });
+            services.AddSerilog((services, lc) => lc
+            .ReadFrom.Configuration(Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .WriteTo.Debug()
+            .WriteTo.Console()
+            .MinimumLevel.Debug()
+            .WriteTo.File("./logs/log-.txt",rollingInterval:RollingInterval.Day));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
+            app.UseSerilogRequestLogging();
             app.UseCors(
                options => options.SetIsOriginAllowed(x => _ = true).AllowAnyMethod().AllowAnyHeader().AllowCredentials()
               );
@@ -55,38 +67,18 @@ namespace Project_OdataToEntity
             String provider = Configuration.GetValue<String>("OdataToEntity:Provider");
             String connectionString = Configuration.GetValue<String>("OdataToEntity:ConnectionString");
             bool useRelationalNulls = Configuration.GetValue<bool>("OdataToEntity:UseRelationalNulls");
-            //String? informationSchemaMappingFileName = Configuration.GetValue<String>("OdataToEntity:InformationSchemaMappingFileName");
-            //String? filter = Configuration.GetValue<String>("OdataToEntity:Filter");
-            //String? defaultSchema = Configuration.GetSection("OdataToEntity:DefaultSchema").Get<String>();
-            //String[]? includedSchemas = Configuration.GetSection("OdataToEntity:IncludedSchemas").Get<String[]>();
-            //String[]? excludedSchemas = Configuration.GetSection("OdataToEntity:ExcludedSchemas").Get<String[]>();
 
-            if (!String.IsNullOrEmpty(basePath) && basePath[0] != '/')
-                basePath = "/" + basePath;
-
-            InformationSchemaSettings informationSchemaSettings = null;// new InformationSchemaSettings();
-            //if (!String.IsNullOrEmpty(defaultSchema))
-            //    informationSchemaSettings.DefaultSchema = defaultSchema;
-            //if (includedSchemas != null)
-            //    informationSchemaSettings.IncludedSchemas = new HashSet<String>(includedSchemas);
-            //if (excludedSchemas != null)
-            //    informationSchemaSettings.ExcludedSchemas = new HashSet<String>(excludedSchemas);
-            //if (filter != null)
-            //    informationSchemaSettings.ObjectFilter = Enum.Parse<DbObjectFilter>(filter, true);
-            //if (informationSchemaMappingFileName != null)
-            //{
-            //    String json = File.ReadAllText(informationSchemaMappingFileName);
-            //    var informationSchemaMapping = System.Text.Json.JsonSerializer.Deserialize<InformationSchemaMapping>(json)!;
-            //    informationSchemaSettings.Operations = informationSchemaMapping.Operations;
-            //    informationSchemaSettings.Tables = informationSchemaMapping.Tables;
-            //}
-
+            
             var schemaFactory = new DynamicSchemaFactory(provider, connectionString);
             using (ProviderSpecificSchema providerSchema = schemaFactory.CreateSchema(useRelationalNulls))
             {
-                IEdmModel edmModel = DynamicMiddlewareHelper.CreateEdmModel(providerSchema, informationSchemaSettings);
+                IEdmModel edmModel = DynamicMiddlewareHelper.CreateEdmModel(providerSchema, null);
 
-                app.UseOdataToEntityMiddleware<OePageMiddleware>(basePath, edmModel);
+                basePath?.Split(',').ToList().ForEach(x =>
+                {
+                    app.UseOdataToEntityMiddleware<OePageMiddleware>(new PathString(x), edmModel);
+                });
+
 
             }
 

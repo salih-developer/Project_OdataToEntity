@@ -42,6 +42,7 @@ namespace OdataToEntity.EfCore.DynamicDataContext.InformationSchema
 
             foreach (Table table in tables)
             {
+                Console.WriteLine("table add schema:" + table.TableName);
                 String tableName;
                 if (informationSchemaSettings.DefaultSchema != null && String.Compare(informationSchemaSettings.DefaultSchema, table.TableSchema, comparison) == 0)
                     tableName = table.TableName;

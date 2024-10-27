@@ -105,11 +105,11 @@ namespace OdataToEntity.AspNetCore
         {
             if (httpContext.Request.PathBase == _apiPath)
             {
-                if (httpContext.Request.Path == "/$metadata")
+                if (httpContext.Request.Path == "/$metadata"|| httpContext.Request.PathBase == "/$metadata")
                     await InvokeMetadataAsync(httpContext).ConfigureAwait(false);
-                else if (httpContext.Request.Path == "/$batch")
+                else if (httpContext.Request.Path == "/$batch" || httpContext.Request.PathBase == "/$batch")
                     await InvokeBatchAsync(httpContext).ConfigureAwait(false);
-                else if (httpContext.Request.Path == "/$json-schema")
+                else if (httpContext.Request.Path == "/$json-schema"|| httpContext.Request.PathBase == "/$json-schema")
                     await InvokeJsonSchema(httpContext);
                 else if (httpContext.Request.Path == "" || httpContext.Request.Path == "/")
                     await InvokeServiceDocumentAsync(httpContext).ConfigureAwait(false);

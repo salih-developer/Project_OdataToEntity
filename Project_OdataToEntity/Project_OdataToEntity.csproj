@@ -7,11 +7,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Controllers\**" />
+    <Compile Remove="logs\**" />
+    <Content Remove="Controllers\**" />
+    <Content Remove="logs\**" />
+    <EmbeddedResource Remove="Controllers\**" />
+    <EmbeddedResource Remove="logs\**" />
+    <None Remove="Controllers\**" />
+    <None Remove="logs\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.17" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.17" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
+    <PackageReference Include="Serilog" Version="4.1.1-dev-02314" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,10 +34,6 @@
     <ProjectReference Include="..\OdataToEntity.EfCore.DynamicDataContext\OdataToEntity.EfCore.DynamicDataContext.csproj" />
     <ProjectReference Include="..\OdataToEntity.EfCore\OdataToEntity.EfCore.csproj" />
     <ProjectReference Include="..\OdataToEntity\OdataToEntity.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
